@@ -73,13 +73,89 @@ all_data_summ <- all_data |>
 
 
 all_data_summ |> 
+  filter(time.series.length<300) |> 
+  filter(completeness<1) |> 
   ggplot(aes(x = completeness)) +
   geom_histogram()
 
 all_data_summ |> 
+  filter(time.series.length<300) |> 
   ggplot(aes(x = time.series.length)) +
   geom_histogram()
 
 all_data_summ |> 
+  filter(time.series.length<300) |> 
   ggplot(aes(x = years.surveyed)) +
   geom_histogram()
+
+
+all_data_summ |> 
+  filter(time.series.length<300) |> 
+  ggplot(aes(x = longevity)) +
+  geom_histogram()
+
+all_data_summ |> 
+  filter(time.series.length<300) |> 
+  ggplot(aes(y = longevity, x =time.series.length)) +
+  geom_point()
+
+all_data_summ |> 
+  filter(time.series.length<300) |> 
+  mutate(tsl.scaled = time.series.length/longevity*3) |> 
+  filter(tsl.scaled >10) |> 
+  filter(completeness > 0.75) |> 
+  filter(measure != "Harvest") |> 
+  summarise(n = n(),
+            n = sum(n)) |> 
+  pull(n) |> 
+  sum()
+
+
+all_data_summ |> 
+  filter(time.series.length<300) |> 
+  ggplot(aes(x = years.surveyed, y = time.series.length)) +
+  geom_point()
+
+
+all_data_summ |> 
+  filter(time.series.length<300) |> 
+  ggplot(aes(x = years.surveyed, y = completeness)) +
+  geom_point()
+
+
+all_data_summ |> 
+  filter(time.series.length<300) |> 
+  ggplot(aes(x = time.series.length, y = completeness)) +
+  geom_point()
+
+all_data_summ |> 
+  filter(time.series.length<300) |> 
+  ggplot(aes(x = measure))+
+  geom_bar()+
+  coord_flip()
+
+all_data_summ |> 
+  filter(time.series.length<300) |> 
+  ggplot(aes(x = kingdom))+
+  geom_bar()+
+  coord_flip()
+
+all_data_summ |> 
+  filter(time.series.length<300) |> 
+  ggplot(aes(x = major.group))+
+  geom_bar()+
+  coord_flip()
+
+all_data_summ |> 
+  filter(time.series.length<300) |> 
+  ggplot(aes(x = continent))+
+  geom_bar()+
+  coord_flip()
+
+all_data_summ |> 
+  filter(time.series.length<300) |> 
+  ggplot(aes(x = ecosystem))+
+  geom_bar()+
+  coord_flip()
+
+
