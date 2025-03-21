@@ -390,7 +390,7 @@ lit_data_tib <- scatter.tib |>
   mutate(y = if_else(y < 0, true = 0, false = y)) |> 
   group_by(plot,group,x_variable,measure) |> 
   nest(.key = "ls") |> 
-  mutate(ls.test = if_else(str_detect(plot,"Aagaard"), true = map(.x = ls, .f = fix.x.aagard),
+  mutate(ls = if_else(str_detect(plot,"Aagaard"), true = map(.x = ls, .f = fix.x.aagard),
                                                        false = map2(.x = ls,.y = x_variable, .f = fill.seq)))
 
 lit_data_tib <- lit_data_tib |> 
@@ -430,7 +430,7 @@ plot_timeseries <- function(df) {
 
 
 lit_data_plots <- lit_data_tib |>
-  unnest(cols = ls.test) |> 
+  unnest(cols = ls) |> 
   group_by(plot,group) |> 
   nest(.key = "ls") |> 
   mutate(timeseries = map(ls, .f = plot_timeseries)) |> 
