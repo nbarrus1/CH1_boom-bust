@@ -1,4 +1,5 @@
-#### this script is for performing the regime shift analysis 
+#### this script is for performing the regime shift analysis using the 
+##sequential t test method sometimes called STARS
 
 rm(list = ls())
 
