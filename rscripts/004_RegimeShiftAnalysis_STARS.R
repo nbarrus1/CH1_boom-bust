@@ -280,6 +280,7 @@ load(here("output","final_set.Rdata"))
 
 
 final.set <- final.set |> 
+  filter(completeness.full == 1) |> 
   mutate(regime.length = if_else(years.surveyed < 15, true = 3, false = 5),
          ls = map2(.x = ls, .y = regime.length, .f = STARS, transform = FALSE))
 
@@ -332,10 +333,10 @@ save(final.plots,file = here("output","literatrure_timeseries_plots.Rdata"))
 
 nrow(final.plots)/12
 
-pdf(here("output","timeseriespanels.pdf"), width = 11, height = 8)
+pdf(here("output","timeseriespanels_STARS.pdf"), width = 11, height = 8)
 
 
-for(i in 1:((nrow(final.plots)/12)-1)) {
+for(i in 1:(ceiling((nrow(final.plots)/12)-1))) {
 
   
 if (i == 1) {

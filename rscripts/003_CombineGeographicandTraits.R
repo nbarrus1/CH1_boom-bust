@@ -7,11 +7,14 @@
 rm(list = ls())
 
 
+
 #libraries
 
 library(tidyverse)
 library(patchwork)
 library(here)
+library(flowchart)
+library(sf)
 
 
 theme_set(theme_bw())
@@ -20,7 +23,13 @@ theme_set(theme_bw())
 load(here("output","literatrure_timeseries.Rdata"))
 load(here("output","MDW_mayan-jewelfish.Rdata"))
 
-otherdata <- read_csv(here("data","BoomBust_Review - TimeSeries_Identification.csv")) 
+otherdata <- read_csv(here("data","BoomBust_Review - TimeSeries_Identification.csv"))
+
+##global map for visualizations
+
+worldmap <- st_read(here("data/shapefile/WorldMap_Continents/"))
+
+
 
 ####combine data###
 
@@ -81,128 +90,6 @@ all_data_summ <- all_data |>
          }),false = completeness.full))
 
 
-
-#----------------------------
-#summary plots
-#------------------------------
-
-
-
-all_data_summ |> 
-  filter(time.series.length<300) |> 
-  #filter(completeness.full<1) |> 
-  ggplot(aes(x = completeness.full)) +
-  geom_histogram()
-
-all_data_summ |> 
-  filter(time.series.length<300) |> 
-  #filter(completeness.10yrs<1) |> 
-  ggplot(aes(x = completeness.10yrs)) +
-  geom_histogram()
-
-all_data_summ |> 
-  filter(time.series.length<300) |> 
-  ggplot(aes(x = time.series.length)) +
-  geom_histogram()
-
-all_data_summ |> 
-  filter(time.series.length<300) |> 
-  ggplot(aes(x = years.surveyed)) +
-  geom_histogram()
-
-
-all_data_summ |> 
-  filter(time.series.length<300) |> 
-  ggplot(aes(x = longevity.yrs)) +
-  geom_histogram()
-
-all_data_summ |> 
-  filter(time.series.length<300) |> 
-  ggplot(aes(y = longevity.yrs, x =time.series.length)) +
-  geom_point()
-
-
-
-all_data_summ |> 
-  filter(time.series.length<300) |> 
-  ggplot(aes(x = years.surveyed, y = time.series.length)) +
-  geom_point()
-
-
-all_data_summ |> 
-  filter(time.series.length<300) |> 
-  ggplot(aes(x = years.surveyed, y = completeness.full)) +
-  geom_point()
-
-all_data_summ |> 
-  filter(time.series.length<300) |> 
-  ggplot(aes(x = years.surveyed, y = completeness.10yrs)) +
-  geom_point()
-
-all_data_summ |> 
-  filter(time.series.length<300) |> 
-  ggplot(aes(x = time.series.length, y = completeness.full)) +
-  geom_point()
-
-all_data_summ |> 
-  filter(time.series.length<300) |> 
-  ggplot(aes(x = time.series.length, y = completeness.10yrs)) +
-  geom_point()
-
-
-
-
-
-all_data_summ |> 
-  filter(time.series.length<300) |> 
-  group_by(measure) |> 
-  summarise(count = n()) |> 
-  ggplot(aes(x = reorder(measure, count, median), y = count))+
-  geom_bar(stat = "identity")+
-  coord_flip()
-
-all_data_summ |> 
-  group_by(kingdom) |> 
-  summarise(count = n()) |> 
-  ggplot(aes(x = reorder(kingdom, count, median), y = count))+
-  geom_bar(stat = "identity")+
-  coord_flip()
-
-all_data_summ |> 
-  group_by(major.group) |> 
-  summarise(count = n()) |> 
-  ggplot(aes(x = reorder(major.group, count, median), y = count))+
-  geom_bar(stat = "identity")+
-  coord_flip()
-
-
-all_data_summ |> 
-  group_by(species.names) |> 
-  summarise(count = n()) |> 
-  ggplot(aes(x = reorder(species.names, count, median), y = count))+
-  geom_bar(stat = "identity")+
-  coord_flip()
-
-all_data_summ |> 
-  group_by(continent) |> 
-  summarise(count = n()) |> 
-  ggplot(aes(x = reorder(continent, count, median), y = count))+
-  geom_bar(stat = "identity")+
-  coord_flip()
-
-all_data_summ |> 
-  group_by(ecosystem) |> 
-  summarise(count = n()) |> 
-  ggplot(aes(x = reorder(ecosystem, count, median), y = count))+
-  geom_bar(stat = "identity")+
-  coord_flip()
-
-
-##final set
-
-
-
-
 final.set <- all_data_summ |> 
   filter(time.series.length<300) |> 
   mutate(tsl.scaled = time.series.length/longevity.yrs) |> 
@@ -211,54 +98,92 @@ final.set <- all_data_summ |>
   filter(completeness.10yrs >= 0.75) |> 
   filter(measure != "Harvest") 
 
-
 save(final.set,file = here("output","final_set.Rdata"))
+#
+
+
+#-------------------------------
+###visualizations###
+#-------------------------------
 
 
 
+#### Flow Chart ####
 
-##plots of final sets
 
-
-final.set |> 
+all_data_summ <- all_data_summ |>
+  filter(native.species == "N") |>
   filter(time.series.length<300) |> 
-  group_by(measure) |> 
-  summarise(count = n()) |> 
-  ggplot(aes(x = reorder(measure, count, median), y = count))+
-  geom_bar(stat = "identity")+
-  coord_flip()
+  mutate(tsl.scaled = time.series.length/longevity.yrs,
+         index1 = if_else((tsl.scaled >10| years.surveyed > 10)&years.surveyed > 7,
+                          true = 1, false = 0),
+         index2 = if_else(completeness.full==1, true = 1, false = 0),
+         index3 = if_else(measure != "Harvest", true = 1, false = 0))
 
-final.set |> 
-  group_by(kingdom) |> 
-  summarise(count = n()) |> 
-  ggplot(aes(x = reorder(kingdom, count, median), y = count))+
-  geom_bar(stat = "identity")+
-  coord_flip()
 
-final.set |> 
-  group_by(major.group) |> 
-  summarise(count = n()) |> 
-  ggplot(aes(x = reorder(major.group, count, median), y = count))+
-  geom_bar(stat = "identity")+
-  coord_flip()
+index1.label <- "years surveyed < 10 years or \n < 8 years if longevity < 1"
+index2.label <- "< 100% Complete"
+index3.label <- "harvest"
 
-final.set |> 
-  group_by(species.names) |> 
-  summarise(count = n()) |> 
-  ggplot(aes(x = reorder(species.names, count, median), y = count))+
-  geom_bar(stat = "identity")+
-  coord_flip()
 
-final.set |> 
-  group_by(continent) |> 
-  summarise(count = n()) |> 
-  ggplot(aes(x = reorder(continent, count, median), y = count))+
-  geom_bar(stat = "identity")+
-  coord_flip()
+sum(all_data_summ[["index1"]]==0)
+label_exc <- paste(
+  c(str_glue("{sum(all_data_summ$index1 == 0 | all_data_summ$index2 == 0 | all_data_summ$index3 == 0, na.rm = T)} excluded:"),
+    str_glue("- {sum(all_data_summ$index1 == 0, na.rm = TRUE)}: {index1.label}"),
+    str_glue("- {sum(all_data_summ$index2 == 0, na.rm = TRUE)}: {index2.label}"),
 
-final.set |> 
-  group_by(ecosystem) |> 
-  summarise(count = n()) |> 
-  ggplot(aes(x = reorder(ecosystem, count, median), y = count))+
-  geom_bar(stat = "identity")+
-  coord_flip()
+        str_glue("- {sum(all_data_summ$index3 == 0, na.rm = TRUE)}: {index3.label}")),
+  collapse = "\n")
+
+all_data_summ |> 
+  mutate(categories = if_else((index1==1 & index2 == 1 & index3 == 1),
+                              true = sample(factor(1:3, labels = c("established","overshoot","boom-bust")), size = 1),
+                              false = NA_character_)) |> 
+  as_fc(label = "compiled \n timeseries",
+        text_pattern = "{N} {label}") |> 
+  fc_filter((index1==1 & index2 == 1 & index3 == 1),
+            label = "met inclusion \n criteria",
+            text_pattern = "{n} {label}",
+            show_exc = TRUE,
+            label_exc = label_exc,
+            text_pattern_exc = "{label}",
+            just_exc = "left",
+            offset_exc = -0.1,
+            direction_exc = "left") |> 
+  fc_split(categories, text_pattern = "{n} {label}",
+           label = c("established","overshoot","boom-bust")) |> 
+  fc_draw() |> 
+  fc_export(filename = here("output","flowchart.pdf"))
+
+
+
+
+###continent_maps###
+
+all_data_summ |> 
+  filter(time.series.length<300) |> 
+  mutate(tsl.scaled = time.series.length/longevity.yrs) |> 
+  filter((tsl.scaled >10| years.surveyed > 10)&years.surveyed > 7) |> 
+  filter(completeness.full == 1) |> 
+  #filter(completeness.10yrs >= 0.75) |> 
+  filter(measure != "Harvest") |>
+  rename(CONTINENT = continent) |> 
+  mutate(CONTINENT = case_when(CONTINENT == "Island" ~ "Oceania",
+                               CONTINENT == "Antartica"~"Antarctica",
+                               .default = CONTINENT),
+         categories = sample(factor(1:3, labels = c("established","overshoot","boom-bust")), size = 1)) |> 
+  filter(categories == "boom-bust") |> 
+  #group_by(CONTINENT, species.names) |> 
+  #summarise(n_timeseries = n()) |> 
+  group_by(CONTINENT) |> 
+  summarise(n_spp = n()) |> 
+  right_join(worldmap |>
+               mutate(CONTINENT = case_when(CONTINENT == "South America"~"S. America",
+                                            CONTINENT == "North America"~"N. America",
+                                            .default = CONTINENT)), by = "CONTINENT",
+             keep = TRUE) |> 
+  ggplot(aes(geometry = geometry))+
+  geom_sf(aes(fill = n_spp))+
+  theme(axis.text = element_blank())
+
+

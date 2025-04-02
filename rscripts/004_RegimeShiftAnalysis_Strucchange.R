@@ -17,16 +17,11 @@ theme_set(theme_bw())
 
 load(here("output","final_set.Rdata"))
 
+#------------------------------------------------------------------
+####create the function for dynamic modelling of the break-points###
+#------------------------------------------------------------------
 
-test.df <- final.set$ls[17:103]
-
-map(test.df,strucchange_bks)
-
-test.df <- final.set$ls[[13]]
-
-strucchange_bks(df = test.df)
-
-fit.breaks <-  function(df, brks = 5) {
+fit.breaks <-  function(df, brks = 2) {
   
 if(nrow(df)*0.15<2) { 
   
@@ -37,7 +32,10 @@ if(nrow(df)*0.15<2) {
   BP_fit  
 }}
   
-  
+
+#------------------------------------------------------------------
+####implement the dynamic modelling approach for break-points###
+#---------------------------------------------------------------
 
 
 final.set <- final.set |>
@@ -59,7 +57,9 @@ final.set <- final.set |>
              slice(.y$breakpoints)
          }))
 
-
+#------------------------------------
+####function for dynamic modelling the plots####
+#------------------------------------
 
 
 plot.brks <- function(df.data, df.breakpoints) {
@@ -82,12 +82,52 @@ plot.brks <- function(df.data, df.breakpoints) {
     axis.title = element_text(size = 8),
     axis.text = element_text(size = 7)
     #plot.margin = unit(c(0,0,0,0), "cm")
-  )#+
-  #labs(x = unique(df$x_variable), y = unique(df$measure),
-  #     subtitle = unique(df$species.names),
-  #     title = paste0(unique(df$author)))
+  )+
+  labs(x = unique(df.data$x_variable), y = unique(df.data$measure),
+       subtitle = unique(df.data$species.names),
+       title = paste0(unique(df.data$author)))
 
 }
 
 
-map2(.x = final.set$ls[1:10], .y = final.set$breaks.ls[1:10], .f = plot.brks)
+final.plots <- final.set |>
+  unnest(cols = ls) |> 
+  group_by(plot,group, breaks.ls) |> 
+  nest(.key = "ls") |> 
+  mutate(timeseries = map2(.x = ls, .y = breaks.ls, .f = plot.brks)) |> 
+  select(-ls)
+
+
+final.plots$timeseries[14]
+
+#---------------------------------------------
+###for loop to save my ggplot pannels###
+#---------------------------------------------
+
+
+nrow(final.plots)/12
+
+pdf(here("output","timeseriespanels_Strucchange.pdf"), width = 11, height = 8)
+
+
+for(i in 1:(ceiling((nrow(final.plots)/12)-1))) {
+  
+  
+  if (i == 1) {
+    
+    timeseries.panel <- reduce(final.plots$timeseries[i:(i*12)],`+`)+
+      plot_layout(ncol = 4, nrow = 3)
+    print(timeseries.panel)
+    
+  } else {
+    
+    timeseries.panel <- reduce(final.plots$timeseries[((i*12)+1):((i+1)*12)],`+`)+
+      plot_layout(ncol = 4, nrow = 3)
+    print(timeseries.panel)
+    
+  }
+  
+}
+
+
+dev.off()
