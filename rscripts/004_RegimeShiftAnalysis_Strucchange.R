@@ -57,6 +57,8 @@ final.set <- final.set |>
              slice(.y$breakpoints)
          }))
 
+
+save(final.set,file = here("output","final_set.Rdata"))
 #------------------------------------
 ####function for dynamic modelling the plots####
 #------------------------------------
@@ -99,6 +101,9 @@ final.plots <- final.set |>
 
 
 final.plots$timeseries[14]
+
+save(final.plots,file = here("output","final_plots.Rdata"))
+
 
 #---------------------------------------------
 ###for loop to save my ggplot pannels###

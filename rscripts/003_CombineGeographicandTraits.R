@@ -13,7 +13,6 @@ rm(list = ls())
 library(tidyverse)
 library(patchwork)
 library(here)
-library(flowchart)
 library(sf)
 
 
@@ -99,6 +98,7 @@ final.set <- all_data_summ |>
   filter(measure != "Harvest") 
 
 save(final.set,file = here("output","final_set.Rdata"))
+save(all_data_summ, file = here("output","all_data.Rdata"))
 #
 
 
@@ -107,53 +107,6 @@ save(final.set,file = here("output","final_set.Rdata"))
 #-------------------------------
 
 
-
-#### Flow Chart ####
-
-
-all_data_summ <- all_data_summ |>
-  filter(native.species == "N") |>
-  filter(time.series.length<300) |> 
-  mutate(tsl.scaled = time.series.length/longevity.yrs,
-         index1 = if_else((tsl.scaled >10| years.surveyed > 10)&years.surveyed > 7,
-                          true = 1, false = 0),
-         index2 = if_else(completeness.full==1, true = 1, false = 0),
-         index3 = if_else(measure != "Harvest", true = 1, false = 0))
-
-
-index1.label <- "years surveyed < 10 years or \n < 8 years if longevity < 1"
-index2.label <- "< 100% Complete"
-index3.label <- "harvest"
-
-
-sum(all_data_summ[["index1"]]==0)
-label_exc <- paste(
-  c(str_glue("{sum(all_data_summ$index1 == 0 | all_data_summ$index2 == 0 | all_data_summ$index3 == 0, na.rm = T)} excluded:"),
-    str_glue("- {sum(all_data_summ$index1 == 0, na.rm = TRUE)}: {index1.label}"),
-    str_glue("- {sum(all_data_summ$index2 == 0, na.rm = TRUE)}: {index2.label}"),
-
-        str_glue("- {sum(all_data_summ$index3 == 0, na.rm = TRUE)}: {index3.label}")),
-  collapse = "\n")
-
-all_data_summ |> 
-  mutate(categories = if_else((index1==1 & index2 == 1 & index3 == 1),
-                              true = sample(factor(1:3, labels = c("established","overshoot","boom-bust")), size = 1),
-                              false = NA_character_)) |> 
-  as_fc(label = "compiled \n timeseries",
-        text_pattern = "{N} {label}") |> 
-  fc_filter((index1==1 & index2 == 1 & index3 == 1),
-            label = "met inclusion \n criteria",
-            text_pattern = "{n} {label}",
-            show_exc = TRUE,
-            label_exc = label_exc,
-            text_pattern_exc = "{label}",
-            just_exc = "left",
-            offset_exc = -0.1,
-            direction_exc = "left") |> 
-  fc_split(categories, text_pattern = "{n} {label}",
-           label = c("established","overshoot","boom-bust")) |> 
-  fc_draw() |> 
-  fc_export(filename = here("output","flowchart.pdf"))
 
 
 
