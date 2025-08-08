@@ -6,11 +6,17 @@ library(tidyverse)
 library(patchwork)
 library(here)
 library(flowchart)
+library(sf)
+
 
 #### Data
 
 load(here("output","all_data.Rdata"))
 load(here("output","regimeclassification.Rdata"))
+
+##global map for visualizations
+
+worldmap <- st_read(here("data/shapefile/WorldMap_Continents/"))
 
 
 #---------------------------------------
@@ -75,121 +81,121 @@ all_data_summ |>
             direction_exc = "left") |> 
   fc_split(class.index1, text_pattern = "{n} {label}") |> 
   fc_split(class.index2, text_pattern = "{n} {label}") |> 
-  fc_draw() |> 
+  fc_draw() #|> 
   fc_export(filename = here("output/figure_editing","flowchart.pdf"))
 
 
-load(here("output","final_plots.Rdata"))
+#----------------------------------------
+  ####taxonomic and geogrpahic summaries###
+#------------------------------------------
+
+  
+  ###continent_maps###
+  
+p1 <-  all_data_summ |> 
+    rename(CONTINENT = continent) |> 
+    mutate(CONTINENT = case_when(CONTINENT == "Island" ~ "Oceania",
+                                 CONTINENT == "Antartica"~"Antarctica",
+                                 .default = CONTINENT)) |> 
+    filter(class.index1 == "some \nevidence for\nboom & bust") |> 
+    group_by(CONTINENT) |> 
+    summarise(n_timeseries = n()) #|> 
+    #group_by(CONTINENT) |> 
+    #summarise(n_spp = n()) |> 
+    right_join(worldmap |>
+                 mutate(CONTINENT = case_when(CONTINENT == "South America"~"S. America",
+                                              CONTINENT == "North America"~"N. America",
+                                              .default = CONTINENT)), by = "CONTINENT",
+               keep = TRUE) |> 
+    ggplot(aes(geometry = geometry))+
+    geom_sf(aes(fill = n_timeseries), color = "#50164aff")+
+    theme(axis.text = element_blank())+
+    scale_fill_gradient2(low = "#50164a80", mid = "#50164abf", high = "#50164aff",
+                         na.value = "white")+
+    labs(fill = "Count")
+  
+ 
+  
+p2 <-  all_data_summ |> 
+    filter(class.index1 == "some \nevidence for\nboom & bust") |> 
+    group_by(kingdom,major.group,ecosystem, species.names) |> 
+    summarise(n_timeseries = n()) |> 
+    ggplot(aes(x = fct_reorder(species.names, n_timeseries, median),
+               y = n_timeseries, fill = ecosystem)) + 
+    geom_segment(aes(xend = species.names), yend = 0, color = "#666666") + 
+    geom_point(size = 2, color = "black", shape = 21)+
+    scale_fill_manual(values = c("#50164aff","#50164abf","#50164a80"))+
+    coord_flip()+
+    labs(y = "Count", x = "Species")+
+    theme(legend.position = c(.6,.2),
+          legend.title = element_blank(),
+          axis.text.y = element_text(face = "italic"),
+          legend.text = element_text(size = 8),
+          legend.background = element_blank(),
+          legend.key = element_blank())
+  
+
+p3 <-  all_data_summ |> 
+    filter(class.index1 == "some \nevidence for\nboom & bust") |> 
+    group_by(kingdom,major.group) |> 
+    summarise(n_timeseries = n()) |> 
+    ggplot(aes(x = fct_reorder(major.group, n_timeseries, median),
+               y = n_timeseries, fill = kingdom)) + 
+    geom_segment(aes(xend = major.group), yend = 0, color = "#666666") + 
+    geom_point(size = 2, color = "black", shape = 21)+
+    scale_fill_manual(values = c("#50164aff","#50164a80"))+
+    coord_flip()+
+    labs(y = "Count", x = "Order")+
+    theme(legend.position = c(.6,.25),
+          legend.title = element_blank(),
+          legend.text = element_text(size = 8),
+          legend.background = element_blank(),
+          legend.key = element_blank()
+    )
+  
+p4 <-  all_data_summ |> 
+    filter(class.index1 == "some \nevidence for\nboom & bust") |> 
+    group_by(ecosystem) |> 
+    summarise(n_timeseries = n()) |> 
+    ggplot(aes(x = fct_reorder(ecosystem, n_timeseries, median),
+               y = n_timeseries)) + 
+    geom_segment(aes(xend = ecosystem), yend = 0, color = "#666666") + 
+    geom_point(size = 2, color = "black", shape = 21,
+               fill = "#50164aff", show.legend = F)+
+    scale_y_continuous(limits = c(0,60), breaks = c(0,10,20,30,40,50,60))+
+    coord_flip()+
+    labs(y = "Count", x = "System")
+  
+p5 <-  all_data_summ |> 
+    filter(class.index1 == "some \nevidence for\nboom & bust") |> 
+    group_by(kingdom) |> 
+    summarise(n_timeseries = n()) |> 
+    ggplot(aes(x = fct_reorder(kingdom, n_timeseries, median),
+               y = n_timeseries)) + 
+    geom_segment(aes(xend = kingdom), yend = 0, color = "#666666") + 
+    geom_point(size = 2, color = "black", shape = 21, 
+               fill = "#50164aff", show.legend = F)+
+    coord_flip()+
+    labs(y = "Count", x = "Kingdom")
 
 
+layout <- "
+AAAAAAAA#
+AAAAAAAA#
+AAAAAAAA#
+AAAAAAAA#
+AAAAAAAA#
+#BBBBBBCC
+#BBBBBBCC
+#BBBBBBDD
+#BBBBBBDD
+#BBBBBBEE
+#BBBBBBEE
+"
 
-plot.select <- regimeclassification$plot[regimeclassification$class=="\nestablished"][[1]]
-group.select <- regimeclassification$group[regimeclassification$class=="\nestablished"][[1]]
+fig3_characteristics <- p1+p2+p3+p4+p5+plot_layout(design = layout)+
+  plot_annotation(tag_levels = "A", tag_suffix = ")")  
 
-
-p1 <-final.plots$timeseries[final.plots$plot == plot.select & final.plots$group == group.select][[1]]
-
-
-p1+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = 1981, xmax = Inf, fill = "#666666", alpha = 0.2)+
-  theme(title = element_text(size = 18, face = "bold"),
-        axis.title = element_text(size = 10, face = "bold"))
-
-ggsave(plot = last_plot(), filename = here("output","established_example.png"), device = "png",
-       units = "in", width = 6, height = 4)
-
-
-plot.select <- regimeclassification$plot[regimeclassification$class=="\novershoot"][[12]]
-group.select <- regimeclassification$group[regimeclassification$class=="\novershoot"][[12]]
-
-
-p2 <-final.plots$timeseries[final.plots$plot == plot.select&final.plots$group == group.select][[1]]
-
-
-p2+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = 13, xmax = Inf, fill = "#666666", alpha = 0.2)+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = 29, xmax = Inf, fill = "#666666", alpha = 0.2)+
-  theme(title = element_text(size = 18, face = "bold"),
-        axis.title = element_text(size = 10, face = "bold"))
-
-ggsave(plot = last_plot(), filename = here("output","overshoot_example.png"), device = "png",
-       units = "in", width = 6, height = 4)
-
-
-
-plot.select <- regimeclassification$plot[regimeclassification$class=="boom &\nbust"][[45]]
-group.select <- regimeclassification$group[regimeclassification$class=="boom &\nbust"][[45]]
-
-
-p3 <-final.plots$timeseries[final.plots$plot == plot.select&final.plots$group == group.select][[1]]
-
-
-p3+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = 1987, xmax = Inf, fill = "#666666", alpha = 0.2)+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = 2001, xmax = Inf, fill = "#666666", alpha = 0.2)+
-  theme(title = element_text(size = 18, face = "bold"),
-        axis.title = element_text(size = 10, face = "bold"))
-
-ggsave(plot = last_plot(), filename = here("output","boom-bust_example.png"), device = "png",
-       units = "in", width = 6, height = 4)
-
-
-
-plot.select <- regimeclassification$plot[regimeclassification$class=="boom &\nnot sust."][[2]]
-group.select <- regimeclassification$group[regimeclassification$class=="boom &\nnot sust."][[2]]
-
-
-p4 <-final.plots$timeseries[final.plots$plot == plot.select&final.plots$group == group.select][[1]]
-
-
-p4+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = 1987, xmax = Inf, fill = "#666666", alpha = 0.2)+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = 2001, xmax = Inf, fill = "#666666", alpha = 0.2)+
-  theme(title = element_text(size = 18, face = "bold"),
-        axis.title = element_text(size = 10, face = "bold"))
-
-ggsave(plot = last_plot(), filename = here("output","boom-bustnotsust_example.png"), device = "png",
-       units = "in", width = 6, height = 4)
-
-
-
-plot.select <- regimeclassification$plot[regimeclassification$class=="unk rate &\nbust"][[4]]
-group.select <- regimeclassification$group[regimeclassification$class=="unk rate &\nbust"][[4]]
-
-
-p5 <-final.plots$timeseries[final.plots$plot == plot.select&final.plots$group == group.select][[1]]
-
-
-p5+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = -Inf, xmax = Inf, fill = "#666666", alpha = 0.2)+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = 1981, xmax = Inf, fill = "#666666", alpha = 0.2)+
-  theme(title = element_text(size = 18, face = "bold"),
-        axis.title = element_text(size = 10, face = "bold"))
-
-ggsave(plot = last_plot(), filename = here("output","unkratebust_example.png"), device = "png",
-       units = "in", width = 6, height = 4)
-
-
-
-plot.select <- regimeclassification$plot[regimeclassification$class=="unk rate &\nnot sust."][[12]]
-group.select <- regimeclassification$group[regimeclassification$class=="unk rate &\nnot sust."][[12]]
-
-
-p6 <-final.plots$timeseries[final.plots$plot == plot.select&final.plots$group == group.select][[1]]
-
-
-p6+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = -Inf, xmax = Inf, fill = "#666666", alpha = 0.2)+
-  annotate("rect", ymin = -Inf, ymax = Inf, xmin = 1998, xmax = Inf, fill = "#666666", alpha = 0.2)+
-  theme(title = element_text(size = 18, face = "bold"),
-        axis.title = element_text(size = 10, face = "bold"))
-
-ggsave(plot = last_plot(), filename = here("output","unkratenotsust_example.png"), device = "png",
-       units = "in", width = 6, height = 4)
-
-
-
-
-temp <- regimeclassification |> 
-  select(plot, author, class)
-
+ggsave(filename = here("output/figure_editing","fig3_taxonomygeography.pdf"),
+       plot = fig3_characteristics, device = "pdf", units = "mm",
+       width = 173, height = (173+((3/5)*173)))

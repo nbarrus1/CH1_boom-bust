@@ -13,7 +13,6 @@ rm(list = ls())
 library(tidyverse)
 library(patchwork)
 library(here)
-library(sf)
 
 
 theme_set(theme_bw())
@@ -24,9 +23,6 @@ load(here("output","MDW_mayan-jewelfish.Rdata"))
 
 otherdata <- read_csv(here("data","BoomBust_Review - TimeSeries_Identification.csv"))
 
-##global map for visualizations
-
-worldmap <- st_read(here("data/shapefile/WorldMap_Continents/"))
 
 
 
@@ -110,33 +106,5 @@ save(all_data_summ, file = here("output","all_data.Rdata"))
 
 
 
-
-###continent_maps###
-
-all_data_summ |> 
-  filter(time.series.length<300) |> 
-  mutate(tsl.scaled = time.series.length/longevity.yrs) |> 
-  filter((tsl.scaled >10| time.series.length >= 10)&years.surveyed > 7) |> 
-  filter(completeness.full == 1) |> 
-  #filter(completeness.10yrs >= 0.75) |> 
-  filter(measure != "Harvest") |>
-  rename(CONTINENT = continent) |> 
-  mutate(CONTINENT = case_when(CONTINENT == "Island" ~ "Oceania",
-                               CONTINENT == "Antartica"~"Antarctica",
-                               .default = CONTINENT),
-         categories = sample(factor(1:3, labels = c("established","overshoot","boom-bust")), size = 1)) |> 
-  filter(categories == "boom-bust") |> 
-  #group_by(CONTINENT, species.names) |> 
-  #summarise(n_timeseries = n()) |> 
-  group_by(CONTINENT) |> 
-  summarise(n_spp = n()) |> 
-  right_join(worldmap |>
-               mutate(CONTINENT = case_when(CONTINENT == "South America"~"S. America",
-                                            CONTINENT == "North America"~"N. America",
-                                            .default = CONTINENT)), by = "CONTINENT",
-             keep = TRUE) |> 
-  ggplot(aes(geometry = geometry))+
-  geom_sf(aes(fill = n_spp))+
-  theme(axis.text = element_blank())
 
 
