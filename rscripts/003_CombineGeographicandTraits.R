@@ -116,7 +116,7 @@ save(all_data_summ, file = here("output","all_data.Rdata"))
 all_data_summ |> 
   filter(time.series.length<300) |> 
   mutate(tsl.scaled = time.series.length/longevity.yrs) |> 
-  filter((tsl.scaled >10| years.surveyed > 10)&years.surveyed > 7) |> 
+  filter((tsl.scaled >10| time.series.length >= 10)&years.surveyed > 7) |> 
   filter(completeness.full == 1) |> 
   #filter(completeness.10yrs >= 0.75) |> 
   filter(measure != "Harvest") |>
