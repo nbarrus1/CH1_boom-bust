@@ -7,7 +7,7 @@ library(patchwork)
 library(here)
 library(flowchart)
 library(sf)
-
+library(forcats)
 
 #### Data
 
@@ -17,6 +17,8 @@ load(here("output","regimeclassification.Rdata"))
 ##global map for visualizations
 
 worldmap <- st_read(here("data/shapefile/WorldMap_Continents/"))
+
+theme_set(theme_bw())
 
 
 #---------------------------------------
@@ -99,7 +101,7 @@ p1 <-  all_data_summ |>
                                  .default = CONTINENT)) |> 
     filter(class.index1 == "some \nevidence for\nboom & bust") |> 
     group_by(CONTINENT) |> 
-    summarise(n_timeseries = n()) #|> 
+    summarise(n_timeseries = n()) |> 
     #group_by(CONTINENT) |> 
     #summarise(n_spp = n()) |> 
     right_join(worldmap |>
@@ -176,7 +178,49 @@ p5 <-  all_data_summ |>
     geom_point(size = 2, color = "black", shape = 21, 
                fill = "#50164aff", show.legend = F)+
     coord_flip()+
-    labs(y = "Count", x = "Kingdom")
+    labs(y = "Count", x = "Kingdom") 
+
+orders <- tibble(longevity.order = c("< 1","> 30","1-2",
+                                     paste0(seq(2,28, by = 2),"-",seq(4,30, by = 2))),
+                 n_timeseries = rep(0, times = length(c("< 1","> 30","1-2",
+                                                        paste0(seq(2,28, by = 2),"-",seq(4,30, by = 2))))))
+
+
+p6 <- all_data_summ |> 
+  filter(class.index1 == "some \nevidence for\nboom & bust") |> 
+  mutate(longevity.order= case_when(longevity.yrs < 1 ~ "< 1",
+                                     longevity.yrs >= 1 & longevity.yrs < 2~ "1-2",
+                                     longevity.yrs >= 2 & longevity.yrs < 4~ "2-4",
+                                     longevity.yrs >= 4 & longevity.yrs < 6~ "4-6",
+                                     longevity.yrs >= 6 & longevity.yrs < 8~ "6-8",
+                                     longevity.yrs >= 8 & longevity.yrs < 10~ "8-10",
+                                     longevity.yrs >= 10 & longevity.yrs < 12~ "10-12",
+                                     longevity.yrs >= 12 & longevity.yrs < 14~ "12-14",
+                                     longevity.yrs >= 14 & longevity.yrs < 16~ "14-16",
+                                     longevity.yrs >= 16 & longevity.yrs < 18~ "16-18",
+                                    longevity.yrs >= 18 & longevity.yrs < 20~ "18-20",
+                                    longevity.yrs >= 20 & longevity.yrs < 22~ "20-22",
+                                    longevity.yrs >= 22 & longevity.yrs < 24~ "22-24",
+                                    longevity.yrs >= 24 & longevity.yrs < 26~ "24-26",
+                                    longevity.yrs >= 26 & longevity.yrs < 28~ "26-28",
+                                    longevity.yrs >= 28 & longevity.yrs < 30~ "28-30",
+                                    longevity.yrs >= 30~ "> 30")) |> 
+  group_by(longevity.order) |> 
+  summarise(n_timeseries = n(),.groups = "drop")
+
+
+p6.complete <- p6 |> 
+  bind_rows(orders |> filter( !(longevity.order %in% (unique(p6$longevity.order))))) |> 
+  mutate(longevity.order = factor(longevity.order, levels = c("< 1","1-2", paste0(seq(2,28,by = 2),"-",seq(4,30,by = 2)),"> 30"),
+                                  ordered = TRUE)) |> 
+  ggplot(aes(x = longevity.order, y = n_timeseries))+
+  geom_segment(aes(xend = longevity.order), yend = 0, color = "#666666") + 
+    geom_point(size = 2, color = "black", shape = 21, 
+             fill = "#50164aff", show.legend = F)+
+  coord_flip()+
+  labs(y = "Count", x = "Longevity (years)")+
+  theme(axis.text.y = element_text(size = 7))
+  
 
 
 layout <- "
@@ -193,9 +237,63 @@ AAAAAAAA#
 #BBBBBBEE
 "
 
-fig3_characteristics <- p1+p2+p3+p4+p5+plot_layout(design = layout)+
+fig3_characteristics <- p1+p2+p3+p4+p6.complete+plot_layout(design = layout)+
   plot_annotation(tag_levels = "A", tag_suffix = ")")  
 
 ggsave(filename = here("output/figure_editing","fig3_taxonomygeography.pdf"),
        plot = fig3_characteristics, device = "pdf", units = "mm",
        width = 173, height = (173+((3/5)*173)))
+
+
+
+#--------------------------------------
+###propotions through categories###
+#--------------------------------------
+
+
+class_names <- levels(as.factor(all_data_summ$class))
+my_pallette <- c("#d45500ff","#a02c2cff","#50164aff","#501448e5","#50164acd","#50164ab2")
+class_pallette <- setNames(my_pallette, nm = class_names)
+
+
+p7 <- all_data_summ |> 
+  ggplot(aes(x = forcats::fct_infreq(major.group)))+
+  geom_bar(aes(fill = class))+
+  scale_fill_manual(values = class_pallette, na.value = "#666666")+
+  coord_flip()+
+  labs(x = "Order")+
+  theme(legend.position = c(.8,.75),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 8),
+        legend.background = element_blank(),
+        legend.key = element_blank()
+  )
+
+p8 <-all_data_summ |> 
+  ggplot(aes(x = forcats::fct_infreq(ecosystem)))+
+  geom_bar(aes(fill = class))+
+  scale_fill_manual(values = class_pallette, na.value = "#666666")+
+  coord_flip()+
+  labs(x = "System")+
+  theme(legend.position = c(.8,.75),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 8),
+        legend.background = element_blank(),
+        legend.key = element_blank()
+  )
+
+p9 <-all_data_summ |> 
+  ggplot(aes(x = forcats::fct_infreq(continent)))+
+  geom_bar(aes(fill = class))+
+  scale_fill_manual(values = class_pallette, na.value = "#666666")+
+  coord_flip()+
+  labs(x = "Continent")+
+  theme(legend.position = c(.8,.75),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 8),
+        legend.background = element_blank(),
+        legend.key = element_blank()
+  )
+
+
+p7/p8/p9
