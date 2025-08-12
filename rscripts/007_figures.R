@@ -212,7 +212,9 @@ p6 <- all_data_summ |>
 p6.complete <- p6 |> 
   bind_rows(orders |> filter( !(longevity.order %in% (unique(p6$longevity.order))))) |> 
   mutate(longevity.order = factor(longevity.order, levels = c("< 1","1-2", paste0(seq(2,28,by = 2),"-",seq(4,30,by = 2)),"> 30"),
-                                  ordered = TRUE)) |> 
+                                  ordered = TRUE),
+         total.timeseries = sum(n_timeseries),
+         prop.timeseries = n_timeseries/total.timeseries) |> 
   ggplot(aes(x = longevity.order, y = n_timeseries))+
   geom_segment(aes(xend = longevity.order), yend = 0, color = "#666666") + 
     geom_point(size = 2, color = "black", shape = 21, 
@@ -259,41 +261,65 @@ class_pallette <- setNames(my_pallette, nm = class_names)
 p7 <- all_data_summ |> 
   ggplot(aes(x = forcats::fct_infreq(major.group)))+
   geom_bar(aes(fill = class))+
-  scale_fill_manual(values = class_pallette, na.value = "#666666")+
+  scale_fill_manual(values = class_pallette, na.value = "#666666",
+                    labels = c("established","overshoot","boom-bust","boom-bust sust. unk",
+                               "boom rate unk-bust", "boom rate unk-bust sust. unk","not classified"))+
   coord_flip()+
   labs(x = "Order")+
   theme(legend.position = c(.8,.75),
         legend.title = element_blank(),
         legend.text = element_text(size = 8),
         legend.background = element_blank(),
-        legend.key = element_blank()
+        legend.key = element_blank(),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16)
   )
 
 p8 <-all_data_summ |> 
   ggplot(aes(x = forcats::fct_infreq(ecosystem)))+
   geom_bar(aes(fill = class))+
-  scale_fill_manual(values = class_pallette, na.value = "#666666")+
+  scale_fill_manual(values = class_pallette, na.value = "#666666",
+                    labels = c("established","overshoot","boom-bust","boom-bust sust. unk",
+                               "boom rate unk-bust", "boom rate unk-bust sust. unk","not classified"))+
   coord_flip()+
   labs(x = "System")+
   theme(legend.position = c(.8,.75),
         legend.title = element_blank(),
         legend.text = element_text(size = 8),
         legend.background = element_blank(),
-        legend.key = element_blank()
+        legend.key = element_blank(),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16)
   )
 
 p9 <-all_data_summ |> 
   ggplot(aes(x = forcats::fct_infreq(continent)))+
   geom_bar(aes(fill = class))+
-  scale_fill_manual(values = class_pallette, na.value = "#666666")+
+  scale_fill_manual(values = class_pallette, na.value = "#666666",
+                    labels = c("established","overshoot","boom-bust","boom-bust sust. unk",
+                               "boom rate unk-bust", "boom rate unk-bust sust. unk","not classified"))+
   coord_flip()+
   labs(x = "Continent")+
   theme(legend.position = c(.8,.75),
         legend.title = element_blank(),
         legend.text = element_text(size = 8),
         legend.background = element_blank(),
-        legend.key = element_blank()
+        legend.key = element_blank(),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16)
   )
 
 
-p7/p8/p9
+fig_4.propotions <- p7+p8+p9+
+  plot_annotation(tag_levels = "A", tag_suffix = ")",
+                  theme = theme(plot.title = element_text(size = 16)))+
+  plot_layout(guides = "collect")&theme(legend.position = "bottom")
+
+
+ggsave(filename = here("output/figure_editing","fig4_propotions.pdf"),
+       plot = fig_4.propotions, device = "pdf", units = "mm",
+       width = 385, height = (173*0.75))
+
+ggsave(filename = here("output/figure_editing","fig4_propotions.png"),
+       plot = fig_4.propotions, device = "png", units = "mm",
+       width = 385, height = (173*0.75))
