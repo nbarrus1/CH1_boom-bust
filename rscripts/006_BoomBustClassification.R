@@ -134,4 +134,9 @@ regimeclassification <- final.set.preds.brks |>
 save(regimeclassification, file = here("output","regimeclassification.Rdata"))
 
 
+###reading list
 
+reading.list <- regimeclassification |> 
+  filter(class == "boom &\nbust") |> 
+  ungroup() |> 
+  select(title, author,species.names,class)
