@@ -411,8 +411,6 @@ save(lit_data_tib,file = here("output","literatrure_timeseries.Rdata"))
 #function for plotting
 
 
-
-
 plot_timeseries <- function(df) {
   df |> 
     ggplot(aes(x = x, y = y))+
