@@ -20,12 +20,12 @@ worldmap <- st_read(here("data/shapefile/WorldMap_Continents/"))
 
 theme_set(theme_bw())
 
-
+all_data <- all_data_summ
 #---------------------------------------
 #### Flow Chart ####
 #---------------------------------------
 
-all_data_summ <- all_data_summ |>
+all_data_summ <- all_data|>
   filter(native.species == "N") |>
   filter(time.series.length<300) |> 
   mutate(tsl.scaled = time.series.length/longevity.yrs,
@@ -35,15 +35,38 @@ all_data_summ <- all_data_summ |>
          index3 = if_else(measure != "Harvest", true = 1, false = 0)) |> 
   left_join(regimeclassification |> ungroup()|>select(plot, group, class), by = c("plot","group")) |> 
   mutate(class.index1 = case_when(is.na(class)~NA_character_,
-                                  class == "\novershoot"~"\novershoot\n ",
+                                  class == "\novershoot"~"\novershoot\n",
                                   class == "\nestablished"~"\nestablished\n ",
-                                  .default = "some \nevidence for\nboom & bust"),
-         class.index2 = case_when(class == "boom &\nbust"~"boom &\nbust",
-                                 class =="boom &\nnot sust."~"boom &\nbust sust. unk.",
-                                 class =="unk rate &\nbust"~"unk rate &\nbust",
-                                 class =="unk rate &\nnot sust."~"unk rate &\nbust sust. unk",
+                                  .default = ">90% decline"),
+         class.index2 = case_when(class == "boom &\nbust"~"fast rate",
+                                 class =="boom &\nnot sust."~"fast rate",
+                                 class =="unk rate &\nbust"~"fast rate",
+                                 class =="unk rate &\nnot sust."~"fast rate",
+                                 class =="slow rate &\nbust"~"slow rate",
+                                 class =="slow rate &\nnot sust."~"slow rate",
+                                 class =="\ncrash"~"slow rate",
                                  .default = NA_character_
-                                 ))
+                                 ),
+         class.index3 = case_when(class == "boom &\nbust"~"boom &\nbust",
+                                  class =="boom &\nnot sust."~"boom &\nbust sust. unk.",
+                                  class =="unk rate &\nbust"~"unk rate &\nbust",
+                                  class =="unk rate &\nnot sust."~"unk rate &\nbust sust. unk",
+                                  class =="slow rate &\nbust"~"slow rate",
+                                  class =="slow rate &\nnot sust."~"slow rate",
+                                  class =="\ncrash"~"slow rate",
+                                  .default = NA_character_
+         ),
+         class.forfigure = case_when(class == "boom &\nbust"~"boom &\nbust",
+                                  class =="boom &\nnot sust."~"boom &\nbust sust. unk.",
+                                  class =="unk rate &\nbust"~"unk rate &\nbust",
+                                  class =="unk rate &\nnot sust."~"unk rate &\nbust sust. unk",
+                                  class =="slow rate &\nbust"~"slow rate",
+                                  class =="slow rate &\nnot sust."~"slow rate",
+                                  class =="\ncrash"~"slow rate",
+                                  class =="\nestablished" ~"\nestablished",
+                                  class =="\novershoot"~"\novershoot",
+                                  .default = NA_character_
+         ))
  
 
 index1.label <- "years surveyed < 10 years or \n < 8 years if longevity < 1"
@@ -83,7 +106,8 @@ all_data_summ |>
             direction_exc = "left") |> 
   fc_split(class.index1, text_pattern = "{n} {label}") |> 
   fc_split(class.index2, text_pattern = "{n} {label}") |> 
-  fc_draw() #|> 
+  fc_split(class.index3, text_pattern = "{n} {label}") |> 
+  fc_draw() |> 
   fc_export(filename = here("output/figure_editing","flowchart.pdf"))
 
 
@@ -99,8 +123,8 @@ p1 <-  all_data_summ |>
     mutate(CONTINENT = case_when(CONTINENT == "Island" ~ "Oceania",
                                  CONTINENT == "Antartica"~"Antarctica",
                                  .default = CONTINENT)) |> 
-    filter(class.index1 == "some \nevidence for\nboom & bust") |> 
-    group_by(CONTINENT) |> 
+  filter(class.index1 == ">90% decline") |> 
+  group_by(CONTINENT) |> 
     summarise(n_timeseries = n()) |> 
     #group_by(CONTINENT) |> 
     #summarise(n_spp = n()) |> 
@@ -119,8 +143,8 @@ p1 <-  all_data_summ |>
  
   
 p2 <-  all_data_summ |> 
-    filter(class.index1 == "some \nevidence for\nboom & bust") |> 
-    group_by(kingdom,major.group,ecosystem, species.names) |> 
+  filter(class.index1 == ">90% decline") |> 
+  group_by(kingdom,major.group,ecosystem, species.names) |> 
     summarise(n_timeseries = n()) |> 
     ggplot(aes(x = fct_reorder(species.names, n_timeseries, median),
                y = n_timeseries, fill = ecosystem)) + 
@@ -138,8 +162,8 @@ p2 <-  all_data_summ |>
   
 
 p3 <-  all_data_summ |> 
-    filter(class.index1 == "some \nevidence for\nboom & bust") |> 
-    group_by(kingdom,major.group) |> 
+  filter(class.index1 == ">90% decline") |> 
+  group_by(kingdom,major.group) |> 
     summarise(n_timeseries = n()) |> 
     ggplot(aes(x = fct_reorder(major.group, n_timeseries, median),
                y = n_timeseries, fill = kingdom)) + 
@@ -156,7 +180,7 @@ p3 <-  all_data_summ |>
     )
   
 p4 <-  all_data_summ |> 
-    filter(class.index1 == "some \nevidence for\nboom & bust") |> 
+    filter(class.index1 == ">90% decline") |> 
     group_by(ecosystem) |> 
     summarise(n_timeseries = n()) |> 
     ggplot(aes(x = fct_reorder(ecosystem, n_timeseries, median),
@@ -169,8 +193,8 @@ p4 <-  all_data_summ |>
     labs(y = "Count", x = "System")
   
 p5 <-  all_data_summ |> 
-    filter(class.index1 == "some \nevidence for\nboom & bust") |> 
-    group_by(kingdom) |> 
+  filter(class.index1 == ">90% decline") |> 
+  group_by(kingdom) |> 
     summarise(n_timeseries = n()) |> 
     ggplot(aes(x = fct_reorder(kingdom, n_timeseries, median),
                y = n_timeseries)) + 
@@ -187,7 +211,7 @@ orders <- tibble(longevity.order = c("< 1","> 30","1-2",
 
 
 p6 <- all_data_summ |> 
-  filter(class.index1 == "some \nevidence for\nboom & bust") |> 
+  filter(class.index1 == ">90% decline") |> 
   mutate(longevity.order= case_when(longevity.yrs < 1 ~ "< 1",
                                      longevity.yrs >= 1 & longevity.yrs < 2~ "1-2",
                                      longevity.yrs >= 2 & longevity.yrs < 4~ "2-4",
@@ -253,17 +277,16 @@ ggsave(filename = here("output/figure_editing","fig3_taxonomygeography.pdf"),
 #--------------------------------------
 
 
-class_names <- levels(as.factor(all_data_summ$class))
-my_pallette <- c("#d45500ff","#a02c2cff","#50164aff","#501448e5","#50164acd","#50164ab2")
+class_names <- levels(as.factor(all_data_summ$class.forfigure))
+my_pallette <- c("#d45500ff","#a02c2cff","#50164aff","#501448e5","#50164ab2","#50164acd")
 class_pallette <- setNames(my_pallette, nm = class_names)
 
 
 p7 <- all_data_summ |> 
   ggplot(aes(x = forcats::fct_infreq(major.group)))+
-  geom_bar(aes(fill = class))+
+  geom_bar(aes(fill = class.forfigure))+
   scale_fill_manual(values = class_pallette, na.value = "#666666",
-                    labels = c("established","overshoot","boom-bust","boom-bust sust. unk",
-                               "boom rate unk-bust", "boom rate unk-bust sust. unk","not classified"))+
+                    labels = class_names)+
   coord_flip()+
   labs(x = "Order")+
   theme(legend.position = c(.8,.75),
@@ -277,10 +300,9 @@ p7 <- all_data_summ |>
 
 p8 <-all_data_summ |> 
   ggplot(aes(x = forcats::fct_infreq(ecosystem)))+
-  geom_bar(aes(fill = class))+
+  geom_bar(aes(fill = class.forfigure))+
   scale_fill_manual(values = class_pallette, na.value = "#666666",
-                    labels = c("established","overshoot","boom-bust","boom-bust sust. unk",
-                               "boom rate unk-bust", "boom rate unk-bust sust. unk","not classified"))+
+                    labels = class_names)+
   coord_flip()+
   labs(x = "System")+
   theme(legend.position = c(.8,.75),
@@ -294,10 +316,9 @@ p8 <-all_data_summ |>
 
 p9 <-all_data_summ |> 
   ggplot(aes(x = forcats::fct_infreq(continent)))+
-  geom_bar(aes(fill = class))+
+  geom_bar(aes(fill = class.forfigure))+
   scale_fill_manual(values = class_pallette, na.value = "#666666",
-                    labels = c("established","overshoot","boom-bust","boom-bust sust. unk",
-                               "boom rate unk-bust", "boom rate unk-bust sust. unk","not classified"))+
+                    labels = class_names)+
   coord_flip()+
   labs(x = "Continent")+
   theme(legend.position = c(.8,.75),
