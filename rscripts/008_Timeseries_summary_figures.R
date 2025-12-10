@@ -331,16 +331,101 @@ p9 <-all_data_summ |>
   )
 
 
-fig_4.propotions <- p7+p8+p9+
+
+##summaries
+
+p10 <- all_data_summ |> 
+  ungroup() |> 
+  mutate(classified = as.factor(if_else(is.na(class.forfigure),"no", "yes")),
+         major.group = as.factor(major.group)) |> 
+  select(major.group,classified) |> 
+  count(major.group,classified, .drop = FALSE) |>
+  group_by(major.group) |> 
+  mutate(n_total = sum(n),
+         percent = n/n_total*100) |> 
+  filter(classified == "yes") |> 
+  ungroup() |> 
+  ggplot(aes(x = fct_reorder(major.group, n_total,max, .desc = TRUE),
+             y = percent))+
+  geom_segment(aes(xend = major.group), yend = 0, color = "#666666") + 
+  geom_point(size = 2, color = "black", shape = 21,
+             fill = "white", show.legend = F)+
+  scale_y_continuous(limits = c(0,100), breaks = seq(0,100,by = 20))+
+  coord_flip()+
+  labs(y = "Percent Classifiable",x = "Order")+
+  theme(legend.position = c(.8,.75),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 8),
+        legend.background = element_blank(),
+        legend.key = element_blank(),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16)
+  )
+
+
+p11 <- all_data_summ |> 
+  ungroup() |> 
+  mutate(classified = as.factor(if_else(is.na(class.forfigure),"no", "yes")),
+         continent = as.factor(continent)) |> 
+  select(continent,classified) |> 
+  count(continent,classified, .drop = FALSE) |>
+  group_by(continent) |> 
+  mutate(n_total = sum(n),
+         percent = n/n_total*100) |> 
+  filter(classified == "yes") |> 
+  ungroup() |> 
+  ggplot(aes(x = fct_reorder(continent, n_total,max, .desc = TRUE),
+             y = percent))+
+  geom_segment(aes(xend = continent), yend = 0, color = "#666666") + 
+  geom_point(size = 2, color = "black", shape = 21,
+             fill = "white", show.legend = F)+
+  scale_y_continuous(limits = c(0,100), breaks = seq(0,100,by = 20))+
+  coord_flip()+
+  labs(y = "Percent Classifiable",x = "Continent")+
+  theme(legend.position = c(.8,.75),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 8),
+        legend.background = element_blank(),
+        legend.key = element_blank(),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16)
+  )
+
+p12 <- all_data_summ |> 
+  ungroup() |> 
+  mutate(classified = as.factor(if_else(is.na(class.forfigure),"no", "yes")),
+         ecosystem = as.factor(ecosystem)) |> 
+  select(ecosystem,classified) |> 
+  count(ecosystem,classified, .drop = FALSE) |>
+  group_by(ecosystem) |> 
+  mutate(n_total = sum(n),
+         percent = n/n_total*100) |> 
+  filter(classified == "yes") |> 
+  ungroup() |> 
+  ggplot(aes(x = fct_reorder(ecosystem, n_total,max, .desc = TRUE),
+             y = percent))+
+  geom_segment(aes(xend = ecosystem), yend = 0, color = "#666666") + 
+  geom_point(size = 2, color = "black", shape = 21,
+             fill = "white", show.legend = F)+
+  scale_y_continuous(limits = c(0,100), breaks = seq(0,100,by = 20))+
+  coord_flip()+
+  labs(y = "Percent Classifiable",x = "System")+
+  theme(legend.position = c(.8,.75),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 8),
+        legend.background = element_blank(),
+        legend.key = element_blank(),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16)
+  )
+
+
+
+
+
+p7+p8+p9+p10+p12+p11+
   plot_annotation(tag_levels = "A", tag_suffix = ")",
                   theme = theme(plot.title = element_text(size = 16)))+
-  plot_layout(guides = "collect")&theme(legend.position = "bottom")
+  plot_layout(nrow = 3, byrow = FALSE, guides = "collect")&theme(legend.position = "bottom")
+  
 
-
-ggsave(filename = here("output/figure_editing","fig4_propotions.pdf"),
-       plot = fig_4.propotions, device = "pdf", units = "mm",
-       width = 385, height = (173*0.75))
-
-ggsave(filename = here("output/figure_editing","fig4_propotions.png"),
-       plot = fig_4.propotions, device = "png", units = "mm",
-       width = 385, height = (173*0.75))

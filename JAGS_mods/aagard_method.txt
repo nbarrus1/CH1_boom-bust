@@ -1,0 +1,23 @@
+model {
+  # Prior for process variance
+  tau <- 1 / (sigma * sigma)
+  sigma ~ dunif(0, 100)
+
+  # Priors for lag weights (bj terms)
+  for (k in 1:(L+1)) {
+    b[k] ~ dnorm(0, 1.0E-6)
+  }
+
+  # Likelihood and internal lag handling
+  for (i in (L+2):M) {
+    # Compute the weighted moving average using observed or imputed y values
+    mu[i] <- 0
+    for (k in 1:(L+1)) {
+      mu[i] <- mu[i] + b[k] * y[i - k]
+    }
+
+    # Observation model
+    y[i] ~ dnorm(mu[i], tau)
+  }
+}
+
