@@ -58,7 +58,7 @@ regime.means <- function(df.original, df.breaks) {
 
 
 
-classification_scheme <- function (df, n_breaks) {
+classification_scheme <- function (df, n_breaks, longevity) {
   
   
   if(n_breaks > 0) {
@@ -127,7 +127,7 @@ classification_scheme <- function (df, n_breaks) {
                 regime_type == "lowhigh"|regime_type=="highlowhigh" ~  
                   df |> 
                      ungroup() |> 
-                     mutate(lambda = lead(pred)/pred,
+                     mutate(lambda = lead(pred)/pred*longevity,                #lambda scaled by longevity
                             split = case_when(x_pred < max.year ~ "before_max",
                                          x_pred > max.year ~ "after_max",
                                          x_pred == max.year ~ "max")) |> 
@@ -145,7 +145,7 @@ classification_scheme <- function (df, n_breaks) {
      regime_type == "lowhighlow"|regime_type == "highlow"|regime_type=="highlowlow" ~  
        df |> 
        ungroup() |> 
-       mutate(lambda = lead(pred)/pred,
+       mutate(lambda = lead(pred)/pred*longevity,                      #lambda scaled by longevity
               split = case_when(x_pred < max.year ~ "before_max",
                                 x_pred > max.year ~ "after_max",
                                 x_pred == max.year ~ "max")) |> 
@@ -223,7 +223,7 @@ decline_lastposition <- df|>
                 rate_increase >= 2&
                 rate_decline <= 0.5&
                 decline_lastposition > 0 &
-                length(unique(df$regime.class))==3 ~ "boom &\nnot sust.",
+                length(unique(df$regime.class))==3 ~ "boom &\n sust. unk",
               decline_mag>=0.9 &
                 n_sustained>=3&
                 rate_decline <= 0.5&
@@ -234,7 +234,7 @@ decline_lastposition <- df|>
                 rate_decline <= 0.5&
                 is.na(rate_increase)&
                  decline_lastposition > 0 &
-                length(unique(df$regime.class))>=2~ "unk rate &\nnot sust.",
+                length(unique(df$regime.class))>=2~ "unk rate &\nsust. unk",
               decline_mag>=0.9 &
                 !(n_sustained>=3)&
                 rate_increase >= 2&
@@ -257,28 +257,28 @@ decline_lastposition <- df|>
                 n_sustained>=3&
                 rate_increase >= 2&
                 rate_decline > 0.5&
-                length(unique(df$regime.class))==3 ~ "\ncrash",
+                length(unique(df$regime.class))==3 ~ "boom &\nbust",
               decline_mag>=0.9 &
                 n_sustained>=3&
                 rate_increase < 2&
                 rate_decline > 0.5&
-                length(unique(df$regime.class))==3 ~ "\ncrash",
+                length(unique(df$regime.class))==3 ~ "boom &\nbust",
               decline_mag>=0.9 &
                 n_sustained>=3&
                 is.na(rate_increase)&
                 rate_decline > 0.5&
-                length(unique(df$regime.class))>=2~ "\ncrash",
+                length(unique(df$regime.class))>=2~ "unk rate &\nbust",
               decline_mag>=0.9 &
                 !(n_sustained>=3)&
                 rate_increase <2&
                 rate_decline <= 0.5&
                 decline_lastposition > 0 &
-                length(unique(df$regime.class))==3 ~ "slow rate &\nnot sust.",
+                length(unique(df$regime.class))==3 ~ "boom &\n sust. unk",
               decline_mag>=0.9 &
                 n_sustained>=3&
                 rate_increase < 2&
                 rate_decline <= 0.5&
-                length(unique(df$regime.class))>=2 ~ "slow rate &\nbust",
+                length(unique(df$regime.class))>=2 ~ "boom &\nbust",
               decline_mag<0.9~"\novershoot")
     
   } else {

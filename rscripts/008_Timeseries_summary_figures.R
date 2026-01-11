@@ -39,7 +39,7 @@ all_data_summ <- all_data|>
                                   class == "\nestablished"~"\nestablished\n ",
                                   .default = ">90% decline"),
          class.index2 = case_when(class == "boom &\nbust"~"fast rate",
-                                 class =="boom &\nnot sust."~"fast rate",
+                                 class =="boom &\n sust. unk"~"fast rate",
                                  class =="unk rate &\nbust"~"fast rate",
                                  class =="unk rate &\nnot sust."~"fast rate",
                                  class =="slow rate &\nbust"~"slow rate",
@@ -48,7 +48,7 @@ all_data_summ <- all_data|>
                                  .default = NA_character_
                                  ),
          class.index3 = case_when(class == "boom &\nbust"~"boom &\nbust",
-                                  class =="boom &\nnot sust."~"boom &\nbust sust. unk.",
+                                  class =="boom &\n sust. unk"~"boom &\nbust sust. unk.",
                                   class =="unk rate &\nbust"~"unk rate &\nbust",
                                   class =="unk rate &\nnot sust."~"unk rate &\nbust sust. unk",
                                   class =="slow rate &\nbust"~"slow rate",
@@ -57,7 +57,7 @@ all_data_summ <- all_data|>
                                   .default = NA_character_
          ),
          class.forfigure = case_when(class == "boom &\nbust"~"boom &\nbust",
-                                  class =="boom &\nnot sust."~"boom &\nbust sust. unk.",
+                                  class =="boom &\n sust. unk"~"boom &\nbust sust. unk.",
                                   class =="unk rate &\nbust"~"unk rate &\nbust",
                                   class =="unk rate &\nnot sust."~"unk rate &\nbust sust. unk",
                                   class =="slow rate &\nbust"~"slow rate",
@@ -105,7 +105,6 @@ all_data_summ |>
             offset_exc = -0.1,
             direction_exc = "left") |> 
   fc_split(class.index1, text_pattern = "{n} {label}") |> 
-  fc_split(class.index2, text_pattern = "{n} {label}") |> 
   fc_split(class.index3, text_pattern = "{n} {label}") |> 
   fc_draw() |> 
   fc_export(filename = here("output/figure_editing","flowchart.pdf"))
@@ -422,10 +421,97 @@ p12 <- all_data_summ |>
 
 
 
-
-p7+p8+p9+p10+p12+p11+
+fig_4.propotions<-p7+p8+p9+p10+p12+p11+
   plot_annotation(tag_levels = "A", tag_suffix = ")",
                   theme = theme(plot.title = element_text(size = 16)))+
   plot_layout(nrow = 3, byrow = FALSE, guides = "collect")&theme(legend.position = "bottom")
-  
+
+ggsave(filename = here("output/figure_editing","fig4_proportions.pdf"),
+       plot = fig_4.propotions, device = "pdf", units = "mm",
+       width = 150*1.6, height = (173*1.6))
+
+
+
+rm(list = ls())
+
+load(here("output","final_plots.Rdata"))
+load(here("output","regimeclassification.Rdata"))
+
+
+
+regimeclassification |> 
+  #filter(str_detect(plot,"Fernandez")) |>
+  #filter(str_detect(plot,"Aagaard")&str_detect(species.names,"Passer")&str_detect(species.names,"Passer")) |> 
+  #filter(str_detect(plot,"Tyler")&str_detect(region,"Alaska")) |> 
+  filter(str_detect(plot,"002_Sandstrom")) |> 
+  pull(plot)
+
+
+
+plot1 <- final.plots |> 
+  filter(plot %in% (regimeclassification |> 
+                      filter(str_detect(plot,"Fernandez")) |>
+                      pull(plot)))
+
+
+plot2 <- final.plots |> 
+  filter(plot %in% (regimeclassification |> 
+                      filter(str_detect(plot,"002_Sandstrom")) |> 
+                      pull(plot)))
+
+plot3 <- final.plots |> 
+  filter(plot %in% (regimeclassification |> 
+                      filter(str_detect(plot,"Aagaard")&str_detect(region,"Miami")&str_detect(species.names,"Passer")) |> 
+                      pull(plot)))
+
+plot4 <- final.plots |> 
+  filter(plot %in% (regimeclassification |> 
+                      filter(str_detect(plot,"Tyler")&str_detect(region,"Alaska")) |> 
+                      pull(plot)))
+
+
+#fernandez plot sargassum: boom-bust
+#aagard & lockwood passer domesticus: unk rate, bust
+#tyler, rangifer tarandus, alaska; slow rate
+#002_Sandstrom, Pacifastacus:boom-bust unk
+
+rm(final.plots, regimeclassification)
+
+
+pboom.bust<- plot1$timeseries[[1]]+
+  labs(title = "A) Boom-Bust", subtitle = NULL)+
+  theme(axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 16))
+
+pboom.bustunk<- plot2$timeseries[[1]]+
+  labs(title = "B) Boom-Bust Sust. Unk.", subtitle = NULL)+
+  theme(axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 16))
+
+pboomunk.bust<-plot3$timeseries[[1]]+
+  labs(title = "C) Boom Unk.-Bust", subtitle = NULL)+
+  theme(axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 16))
+
+pslowrate <- plot4$timeseries[[1]]+
+  labs(title = "D) Slow Decline", subtitle = NULL)+
+  theme(axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 16))
+
+
+fig3_examples <- pboom.bust+pboom.bustunk+pboomunk.bust+pslowrate+
+  plot_layout(guides = "collect")&theme(legend.position = "bottom") 
+
+
+ggsave(filename = here("output/figure_editing","fig3_examples.pdf"),
+       plot = fig3_examples, device = "pdf", units = "mm",
+       width = 180, height = 150)
 
