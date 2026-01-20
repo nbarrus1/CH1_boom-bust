@@ -24,6 +24,8 @@ load(here("output","all_data.Rdata"))
 ###specify functions
 
 
+
+
 regime.means <- function(df.original, df.breaks) {
   
   if(nrow(df.breaks)==1) {
@@ -55,6 +57,8 @@ regime.means <- function(df.original, df.breaks) {
   }
   
 }
+
+
 
 
 
@@ -145,7 +149,7 @@ classification_scheme <- function (df, n_breaks, longevity) {
      regime_type == "lowhighlow"|regime_type == "highlow"|regime_type=="highlowlow" ~  
        df |> 
        ungroup() |> 
-       mutate(lambda = lead(pred)/pred*longevity,                      #lambda scaled by longevity
+       mutate(lambda = lead(pred)/pred/longevity,                      #lambda scaled by longevity
               split = case_when(x_pred < max.year ~ "before_max",
                                 x_pred > max.year ~ "after_max",
                                 x_pred == max.year ~ "max")) |> 
@@ -157,7 +161,7 @@ classification_scheme <- function (df, n_breaks, longevity) {
        df |> 
        ungroup() |> 
        filter(regime.class != "reg3") |> 
-       mutate(lambda = lead(pred)/pred,
+       mutate(lambda = lead(pred)/pred/longevity,                      #lambda scaled by longevity
               split = case_when(x_pred < max.year.hlh ~ "before_max",
                                 x_pred > max.year.hlh ~ "after_max",
                                 x_pred == max.year ~ "max")) |> 
@@ -290,7 +294,6 @@ decline_lastposition <- df|>
 }
 
 
-
 #------------------------------------------------------------------
 ####create the function for dynamic modelling of the break-points###
 #------------------------------------------------------------------
@@ -301,7 +304,8 @@ regimeclassification <- final.set.preds.brks |>
                       true = map2(.x = predictions, .y = breaks.preds, .f = regime.means),
                       false = ls),
          index4 = if_else(brks_opt_num > 0, true = 1, false = 0),
-         class = map2_chr(.x = predictions, .y = brks_opt_num, .f = classification_scheme))
+         class = pmap_chr(list(df = predictions, n_breaks = brks_opt_num, longevity = longevity.yrs),
+                          .f = classification_scheme))
 
 
 save(regimeclassification, file = here("output","regimeclassification.Rdata"))

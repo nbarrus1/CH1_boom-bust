@@ -344,7 +344,7 @@ scatter.tib <- scatter.ls |>
 
 # read in and comibe the data from tables
 
-table.tib <- read_excel(here("data","BoomBust_DatafromTables.xlsx")) |> 
+table.tib <- read_excel(here("data","BoomBust_DatafromTables.xlsx"))|> 
   group_by(plot,group) |> 
   nest(.key = "ls")
 
@@ -390,9 +390,16 @@ lit_data_tib <- scatter.tib |>
   mutate(y = if_else(y < 0, true = 0, false = y)) |> 
   group_by(plot,group,x_variable,measure) |> 
   nest(.key = "ls") |> 
-  mutate(ls = if_else(str_detect(plot,"Aagaard"), true = map(.x = ls, .f = fix.x.aagard),
-                                                       false = map2(.x = ls,.y = x_variable, .f = fill.seq)))
+  mutate(ls = pmap(list(.x = ls, .y = x_variable, .z = plot),
+                   function(.x,.y,.z) {
+                                        if(str_detect(.z, "Aagaard")) {
+                                          fix.x.aagard(df = .x)} 
+                                        else {
+                                          fill.seq(df = .x, x = .y)
+                                        }
+  }))
 
+  
 lit_data_tib <- lit_data_tib |> 
   mutate(measure = if_else(measure == "Annual", true = "Annual Maximum Density", false = measure),
          kraemer_table = lit_data_tib |> 
