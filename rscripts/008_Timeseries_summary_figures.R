@@ -29,7 +29,8 @@ all_data_summ <- all_data|>
   filter(native.species == "N") |>
   filter(time.series.length<300) |> 
   mutate(tsl.scaled = time.series.length/longevity.yrs,
-         index1 = if_else((tsl.scaled >10| years.surveyed > 10)&years.surveyed > 7,
+         ###create three indexes describing if the time series meets the inclusion criteria
+         index1 = if_else((tsl.scaled >10| years.surveyed > 10)&years.surveyed > 7,  
                           true = 1, false = 0),
          index2 = if_else(completeness.10yrs >= 0.75, true = 1, false = 0),
          index3 = if_else(measure != "Harvest", true = 1, false = 0)) |> 
@@ -442,10 +443,10 @@ load(here("output","regimeclassification.Rdata"))
 regimeclassification |> 
   #filter(str_detect(plot,"Fernandez")) |>
   #filter(str_detect(plot,"Aagaard")&str_detect(species.names,"Passer")&str_detect(species.names,"Passer")) |> 
+  filter(str_detect(plot, "332_Haubrock")) |> 
   #filter(str_detect(plot,"Tyler")&str_detect(region,"Alaska")) |> 
-  filter(str_detect(plot,"002_Sandstrom")) |> 
+  #filter(str_detect(plot,"002_Sandstrom")) |> 
   pull(plot)
-
 
 
 plot1 <- final.plots |> 
@@ -461,8 +462,8 @@ plot2 <- final.plots |>
 
 plot3 <- final.plots |> 
   filter(plot %in% (regimeclassification |> 
-                      filter(str_detect(plot,"Aagaard")&str_detect(region,"Miami")&str_detect(species.names,"Passer")) |> 
-                      pull(plot)))
+                      filter(str_detect(plot, "332_Haubrock")) |> 
+                      pull(plot)) )
 
 plot4 <- final.plots |> 
   filter(plot %in% (regimeclassification |> 
@@ -486,7 +487,7 @@ pboom.bust<- plot1$timeseries[[1]]+
         plot.title = element_text(size = 16))
 
 pboom.bustunk<- plot2$timeseries[[1]]+
-  labs(title = "B) Boom-Bust Sust. Unk.", subtitle = NULL)+
+  labs(title = "D) Boom-Bust Sust. Unk.", subtitle = NULL)+
   theme(axis.title = element_text(size = 14),
         axis.text = element_text(size = 12),
         legend.text = element_text(size = 12),
@@ -500,14 +501,14 @@ pboomunk.bust<-plot3$timeseries[[1]]+
         plot.title = element_text(size = 16))
 
 pslowrate <- plot4$timeseries[[1]]+
-  labs(title = "D) Slow Decline", subtitle = NULL)+
+  labs(title = "B) Boom-Bust", subtitle = NULL)+
   theme(axis.title = element_text(size = 14),
         axis.text = element_text(size = 12),
         legend.text = element_text(size = 12),
         plot.title = element_text(size = 16))
 
 
-fig3_examples <- pboom.bust+pboom.bustunk+pboomunk.bust+pslowrate+
+fig3_examples <- pboom.bust+pslowrate+pboomunk.bust+pboom.bustunk+
   plot_layout(guides = "collect")&theme(legend.position = "bottom") 
 
 
